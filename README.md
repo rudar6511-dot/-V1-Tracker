@@ -1,25 +1,30 @@
-# Vehicle Tracker V1
+# Vehicle Tracker V2
 
-Starter web app for authorized vehicle tracking.
+A front-end starter for tracking vehicles that the user owns or is authorized to track.
 
-## V1 features
-- Vehicle number search
-- Demo registered vehicles
-- GPS-style location dashboard
-- Responsive dark UI
-- Demo map
-- No public/private vehicle location lookup
+## V2 features
+- Interactive OpenStreetMap map using Leaflet
+- Vehicle registration form
+- Local browser storage for authorized demo vehicles
+- Vehicle search and map marker
+- Responsive tracking dashboard
+- Demo GPS coordinates and update time
+- No public vehicle-location lookup
 
-## Demo
-HR26AB1234
-DL01XY5678
+## Demo vehicles
+- HR26AB1234
+- DL01XY5678
 
-## Next stages
-1. Interactive map
-2. Owner/admin login
-3. Registered vehicle database
-4. GPS/VLTD device API
-5. Live location updates
-6. Location history and geofencing
+## Important
+Entering a registration/number plate does not reveal a vehicle's live location. Live tracking requires an authorized GPS/VLTD device installed in the vehicle and a backend/API that receives its telemetry.
 
-Use only for vehicles you own or are authorized to track.
+## Next development
+1. Secure owner/admin authentication
+2. Cloud database for vehicles and users
+3. Authorized GPS/VLTD API integration
+4. Live location refresh
+5. Location history
+6. Geofencing and alerts
+7. HTTPS/security rules and audit logs
+
+Use only with vehicles and location data you are authorized to access.
