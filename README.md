@@ -1,30 +1,45 @@
-# Vehicle Tracker V2
+# Vehicle Tracker V3
 
-A front-end starter for tracking vehicles that the user owns or is authorized to track.
+Vehicle tracking dashboard for vehicles and GPS/VLTD data the user is authorized to access.
 
-## V2 features
+## V3 changes
+- Removed manual latitude/longitude registration fields
+- Register a vehicle with Vehicle Number + Vehicle Name + GPS Device ID
+- Optional REST API connection for an authorized GPS/VLTD backend
+- Dashboard polls the configured API every 10 seconds
 - Interactive OpenStreetMap map using Leaflet
-- Vehicle registration form
-- Local browser storage for authorized demo vehicles
-- Vehicle search and map marker
-- Responsive tracking dashboard
-- Demo GPS coordinates and update time
-- No public vehicle-location lookup
+- Demo GPS vehicles remain available for testing
+- No public number-plate location lookup
 
-## Demo vehicles
-- HR26AB1234
-- DL01XY5678
+## GPS API contract
+
+The website expects this endpoint:
+
+GET `YOUR_API_BASE/vehicle/HR26AB1234`
+
+Example JSON response:
+
+```json
+{
+  "lat": 28.6139,
+  "lng": 77.2090,
+  "accuracy": "±8 m",
+  "updatedAt": "2026-09-23T10:30:00Z"
+}
+```
+
+The backend must identify the vehicle from its authorized device and return only data the authenticated user is allowed to see.
+
+## Device-to-server flow
+
+`GPS/VLTD device → cellular network → authorized backend → VehicleTracker website → map`
+
+A generic device cannot be connected by registration number alone. The actual GPS/VLTD device must support a documented API/protocol, and the backend must authenticate its telemetry.
 
 ## Important
-Entering a registration/number plate does not reveal a vehicle's live location. Live tracking requires an authorized GPS/VLTD device installed in the vehicle and a backend/API that receives its telemetry.
 
-## Next development
-1. Secure owner/admin authentication
-2. Cloud database for vehicles and users
-3. Authorized GPS/VLTD API integration
-4. Live location refresh
-5. Location history
-6. Geofencing and alerts
-7. HTTPS/security rules and audit logs
+A vehicle registration/number plate does not reveal live location. This project is intended only for vehicles and location data you own or are authorized to track.
 
-Use only with vehicles and location data you are authorized to access.
+## Next step
+
+Add a secure backend (for example Node.js + PostgreSQL/Supabase) and connect the exact GPS/VLTD device's documented telemetry protocol. Do not put device secrets or backend credentials in this public frontend repository.
