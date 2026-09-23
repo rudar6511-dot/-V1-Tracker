@@ -1,45 +1,17 @@
-const demoVehicles={HR26AB1234:{name:"Demo Car",lat:28.6139,lng:77.209,accuracy:"±8 m"},DL01XY5678:{name:"Demo SUV",lat:28.5355,lng:77.391,accuracy:"±12 m"}};
-const savedKey="vehicleTrackerAuthorizedVehicles";
-let customVehicles=JSON.parse(localStorage.getItem(savedKey)||"{}");
-let map=null,marker=null;
-
+const demoVehicles={HR26AB1234:{name:"Demo Car",deviceId:"DEMO-001",lat:28.6139,lng:77.209,accuracy:"±8 m"},DL01XY5678:{name:"Demo SUV",deviceId:"DEMO-002",lat:28.5355,lng:77.391,accuracy:"±12 m"}};
+const savedKey="vehicleTrackerAuthorizedVehiclesV3",apiKey="vehicleTrackerApiUrlV3";
+let customVehicles=JSON.parse(localStorage.getItem(savedKey)||"{}"),map=null,marker=null,activePlate=null,pollTimer=null;
 const $=id=>document.getElementById(id);
 function allVehicles(){return {...demoVehicles,...customVehicles}}
 function normalize(v){return v.trim().toUpperCase().replace(/\s+/g,"")}
 function save(){localStorage.setItem(savedKey,JSON.stringify(customVehicles));renderVehicleList()}
-function renderVehicleList(){
- const list=$("vehicleList");list.innerHTML="";
- Object.entries(allVehicles()).forEach(([plate,v])=>{
-  const chip=document.createElement("div");chip.className="vehicle-chip";
-  const text=document.createElement("span");text.textContent=plate+" • "+v.name;
-  chip.appendChild(text);
-  if(customVehicles[plate]){const del=document.createElement("button");del.textContent="✕";del.title="Remove local vehicle";del.onclick=()=>{delete customVehicles[plate];save()};chip.appendChild(del)}
-  list.appendChild(chip)
- })
-}
-function track(){
- const plate=normalize($("vehicleNo").value);$("message").textContent="";
- if(!plate){$("message").textContent="Please enter a vehicle number.";return}
- const v=allVehicles()[plate];
- if(!v){$("message").textContent="Vehicle is not registered in this authorized demo account."; $("result").classList.add("hidden");return}
- $("plate").textContent=plate;$("vehicleName").textContent=v.name;
- $("lat").textContent=v.lat.toFixed(6)+"°";$("lng").textContent=v.lng.toFixed(6)+"°";
- $("accuracy").textContent=v.accuracy;$("updated").textContent=new Date().toLocaleString();
- $("result").classList.remove("hidden");
- setTimeout(()=>showMap(v,plate),50);
-}
-function showMap(v,plate){
- if(!map){map=L.map("map").setView([v.lat,v.lng],14);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map)}
- else map.setView([v.lat,v.lng],14);
- if(marker)marker.remove();
- marker=L.marker([v.lat,v.lng]).addTo(map).bindPopup("<b>"+plate+"</b><br>"+v.name+"<br>Demo GPS position").openPopup();
- map.invalidateSize();
-}
+function renderVehicleList(){const list=$("vehicleList");list.innerHTML="";Object.entries(allVehicles()).forEach(([plate,v])=>{const chip=document.createElement("div");chip.className="vehicle-chip";const text=document.createElement("span");text.textContent=plate+" • "+v.name+" • "+v.deviceId;chip.appendChild(text);if(customVehicles[plate]){const del=document.createElement("button");del.textContent="✕";del.title="Remove local vehicle";del.onclick=()=>{delete customVehicles[plate];save()};chip.appendChild(del)}list.appendChild(chip)})}
+function setDashboard(plate,v,source){$("plate").textContent=plate;$("vehicleName").textContent=v.name;$("deviceId").textContent="Device: "+v.deviceId;$("lat").textContent=Number(v.lat).toFixed(6)+"°";$("lng").textContent=Number(v.lng).toFixed(6)+"°";$("accuracy").textContent=v.accuracy||"GPS";$("updated").textContent=v.updatedAt?new Date(v.updatedAt).toLocaleString():new Date().toLocaleString();$("online").textContent=source==="api"?"● LIVE GPS":"● DEMO GPS";$("online").style.color=source==="api"?"#35e87d":"#ffbf69";$("result").classList.remove("hidden");setTimeout(()=>showMap(v,plate,source),50)}
+async function getApiVehicle(plate){const base=localStorage.getItem(apiKey)||"";if(!base)return null;const url=base.replace(/\/$/,"")+"/vehicle/"+encodeURIComponent(plate);const r=await fetch(url);if(!r.ok)throw new Error("GPS API returned "+r.status);const v=await r.json();if(!Number.isFinite(Number(v.lat))||!Number.isFinite(Number(v.lng)))throw new Error("GPS API returned invalid coordinates");return v}
+async function track(){const plate=normalize($("vehicleNo").value);$("message").textContent="";if(!plate){$("message").textContent="Please enter a vehicle number.";return}const local=allVehicles()[plate];if(!local){$("message").textContent="Vehicle is not registered in this authorized tracker.";return}try{const api=await getApiVehicle(plate);setDashboard(plate,{...local,...api}, "api")}catch(e){if(localStorage.getItem(apiKey)){$("message").textContent="Live GPS API unavailable. Showing demo/local data.";setDashboard(plate,local,"demo")}else setDashboard(plate,local,"demo")}activePlate=plate;clearInterval(pollTimer);if(localStorage.getItem(apiKey))pollTimer=setInterval(refreshActive,10000)}
+async function refreshActive(){if(!activePlate)return;try{const api=await getApiVehicle(activePlate);setDashboard(activePlate,{...allVehicles()[activePlate],...api},"api")}catch(e){}}
+function showMap(v,plate,source){const pos=[Number(v.lat),Number(v.lng)];if(!map){map=L.map("map").setView(pos,14);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map)}else map.setView(pos,14);if(marker)marker.remove();marker=L.marker(pos).addTo(map).bindPopup("<b>"+plate+"</b><br>"+v.name+"<br>"+(source==="api"?"Live GPS/VLTD position":"Demo GPS position")).openPopup();map.invalidateSize()}
 $("trackBtn").addEventListener("click",track);$("vehicleNo").addEventListener("keydown",e=>{if(e.key==="Enter")track()});
-$("addBtn").addEventListener("click",()=>{
- const plate=normalize($("regNo").value),name=$("regName").value.trim()||"My Vehicle",lat=Number($("regLat").value),lng=Number($("regLng").value);
- if(!plate||!Number.isFinite(lat)||!Number.isFinite(lng)||lat<-90||lat>90||lng<-180||lng>180){$("regMessage").textContent="Enter a valid vehicle number, latitude and longitude.";return}
- customVehicles[plate]={name,lat,lng,accuracy:"Demo accuracy"};save();$("regMessage").textContent=plate+" added to this browser's authorized demo list."; $("vehicleNo").value=plate;
- $("regNo").value="";$("regName").value="";$("regLat").value="";$("regLng").value="";
-});
-renderVehicleList();
+$("addBtn").addEventListener("click",()=>{const plate=normalize($("regNo").value),name=$("regName").value.trim()||"My Vehicle",deviceId=$("regDevice").value.trim();if(!plate||!deviceId){$("regMessage").textContent="Enter vehicle number and GPS device ID.";return}customVehicles[plate]={name,deviceId,accuracy:"Device reported"};save();$("regMessage").textContent=plate+" registered with GPS device "+deviceId+"."; $("vehicleNo").value=plate;$("regNo").value="";$("regName").value="";$("regDevice").value=""});
+$("saveApiBtn").addEventListener("click",()=>{const url=$("apiUrl").value.trim().replace(/\/$/,"");if(url)localStorage.setItem(apiKey,url);else localStorage.removeItem(apiKey);$("apiMessage").textContent=url?"GPS API saved. Tracking will refresh every 10 seconds.":"Demo GPS mode enabled.";});
+$("apiUrl").value=localStorage.getItem(apiKey)||"";renderVehicleList();
