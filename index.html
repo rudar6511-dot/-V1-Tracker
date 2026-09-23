@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vehicle Tracker V1</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🚗 Vehicle<span>Tracker</span></div>
+  <div class="status"><span class="dot"></span> Tracking System</div>
+</header>
+<main class="container">
+<section class="hero">
+  <div><p class="eyebrow">AUTHORIZED TRACKING</p><h1>Track Your Vehicle</h1>
+  <p class="sub">Enter a vehicle number to view an authorized vehicle's latest GPS position.</p></div>
+  <div class="shield">🔐</div>
+</section>
+<section class="search-card">
+  <label for="vehicleNo">Vehicle Number</label>
+  <div class="search-row"><input id="vehicleNo" maxlength="12" placeholder="e.g. HR26AB1234" autocomplete="off"><button id="trackBtn">Track Vehicle</button></div>
+  <p class="hint">Demo vehicles: HR26AB1234, DL01XY5678</p><p id="message" class="message"></p>
+</section>
+<section id="result" class="dashboard hidden">
+  <div class="vehicle-card"><div class="vehicle-icon">🚙</div><div><span class="label">VEHICLE</span><h2 id="plate">—</h2><p id="vehicleName">—</p></div><span class="online">● ONLINE</span></div>
+  <div class="info-grid">
+    <div class="info"><span>📍 Latitude</span><strong id="lat">—</strong></div>
+    <div class="info"><span>📍 Longitude</span><strong id="lng">—</strong></div>
+    <div class="info"><span>🛰️ GPS Accuracy</span><strong id="accuracy">—</strong></div>
+    <div class="info"><span>🕐 Last Update</span><strong id="updated">—</strong></div>
+  </div>
+  <div class="map-wrap"><div class="map"><div class="road r1"></div><div class="road r2"></div><div class="road r3"></div><div class="road r4"></div><div class="marker">🚗</div><div class="map-label">GPS LOCATION</div></div>
+  <p class="demo-note">Demo map view. Real maps and live GPS will be connected in the next stage.</p></div>
+</section>
+</main>
+<footer>VehicleTracker • Use only for vehicles you own or are authorized to track.</footer>
+<script src="script.js"></script>
+</body></html>
