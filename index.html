@@ -2,34 +2,44 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Vehicle Tracker V2</title>
+<title>Vehicle Tracker V3</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="topbar"><div class="brand">🚗 Vehicle<span>Tracker</span></div><div class="status"><span class="dot"></span> Authorized Tracking</div></header>
+<header class="topbar"><div class="brand">🚗 Vehicle<span>Tracker</span></div><div class="status"><span class="dot"></span> GPS/VLTD Ready</div></header>
 <main class="container">
-<section class="hero"><div><p class="eyebrow">VEHICLE TRACKING DASHBOARD</p><h1>Track Your Vehicle</h1><p class="sub">Register vehicles you are authorized to track and view their latest demo GPS position on an interactive map.</p></div><div class="shield">🛰️</div></section>
+<section class="hero"><div><p class="eyebrow">AUTHORIZED GPS VEHICLE TRACKING</p><h1>Track Your Vehicle</h1><p class="sub">Connect an authorized GPS/VLTD device and view its latest location on the map. No manual latitude or longitude entry is required.</p></div><div class="shield">🛰️</div></section>
 
 <section class="panel">
-<div class="panel-head"><div><h2>Register Vehicle</h2><p>Add a vehicle to this browser's authorized demo list.</p></div><span class="tag">LOCAL DEMO</span></div>
-<div class="form-grid"><div><label for="regNo">Vehicle Number</label><input id="regNo" maxlength="12" placeholder="HR26AB1234"></div><div><label for="regName">Vehicle Name</label><input id="regName" maxlength="30" placeholder="My Car"></div><div><label for="regLat">Latitude</label><input id="regLat" type="number" step="any" placeholder="28.6139"></div><div><label for="regLng">Longitude</label><input id="regLng" type="number" step="any" placeholder="77.2090"></div></div>
-<button id="addBtn" class="primary">＋ Add Authorized Vehicle</button><p id="regMessage" class="message"></p>
+<div class="panel-head"><div><h2>Register GPS Vehicle</h2><p>Register a vehicle using its authorized GPS device ID.</p></div><span class="tag">GPS DEVICE</span></div>
+<div class="form-grid">
+<div><label for="regNo">Vehicle Number</label><input id="regNo" maxlength="12" placeholder="HR26AB1234"></div>
+<div><label for="regName">Vehicle Name</label><input id="regName" maxlength="30" placeholder="My Car"></div>
+<div><label for="regDevice">GPS Device ID</label><input id="regDevice" maxlength="40" placeholder="GPS-001"></div>
+</div>
+<button id="addBtn" class="primary">＋ Add Authorized GPS Vehicle</button><p id="regMessage" class="message"></p>
 </section>
 
 <section class="panel">
 <label for="vehicleNo">Track Registered Vehicle</label>
 <div class="search-row"><input id="vehicleNo" maxlength="12" placeholder="e.g. HR26AB1234" autocomplete="off"><button id="trackBtn" class="primary">Track Vehicle</button></div>
-<p class="hint">Demo vehicles: HR26AB1234, DL01XY5678</p><p id="message" class="message"></p>
+<p class="hint">Demo devices are included. A real device must send telemetry to your backend API.</p><p id="message" class="message"></p>
 <div id="vehicleList" class="vehicle-list"></div>
 </section>
 
+<section class="panel api-panel">
+<div class="panel-head"><div><h2>GPS API Connection</h2><p>Optional endpoint for your own authorized GPS/VLTD backend.</p></div><span class="tag">V3</span></div>
+<div class="search-row"><input id="apiUrl" placeholder="https://your-server.example.com/api" autocomplete="off"><button id="saveApiBtn" class="primary">Save API</button></div>
+<p id="apiMessage" class="hint">Leave empty to use the built-in demo GPS data.</p>
+</section>
+
 <section id="result" class="dashboard hidden">
-<div class="vehicle-card"><div class="vehicle-icon">🚙</div><div><span class="label">VEHICLE</span><h2 id="plate">—</h2><p id="vehicleName">—</p></div><span id="online" class="online">● DEMO GPS</span></div>
+<div class="vehicle-card"><div class="vehicle-icon">🚙</div><div><span class="label">VEHICLE</span><h2 id="plate">—</h2><p id="vehicleName">—</p><p id="deviceId" class="device-text">Device: —</p></div><span id="online" class="online">● GPS WAITING</span></div>
 <div class="info-grid"><div class="info"><span>📍 Latitude</span><strong id="lat">—</strong></div><div class="info"><span>📍 Longitude</span><strong id="lng">—</strong></div><div class="info"><span>🛰️ GPS Accuracy</span><strong id="accuracy">—</strong></div><div class="info"><span>🕐 Last Update</span><strong id="updated">—</strong></div></div>
-<div class="map-wrap"><div id="map"></div><p class="demo-note">The map is interactive. This V2 demo uses saved coordinates; live movement requires an authorized GPS/VLTD device and backend API.</p></div>
+<div class="map-wrap"><div id="map"></div><p class="demo-note">For real tracking, the authorized GPS/VLTD device must send its telemetry to your backend. This website reads that authorized data; a number plate alone cannot provide live location.</p></div>
 </section>
 </main>
-<footer>VehicleTracker • Track only vehicles you own or are authorized to track.</footer>
+<footer>VehicleTracker • Track only vehicles and GPS data you are authorized to access.</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="script.js"></script>
 </body></html>
