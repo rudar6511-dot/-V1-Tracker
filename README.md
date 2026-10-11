@@ -1,27 +1,25 @@
-# V1 Tracker — Secret Key Phone Finder (Option A)
+# V1 Tracker — Installable laptop dashboard
 
-This repository now contains a starter system for finding **your own enrolled Android phone** from the laptop dashboard. Each phone gets a different random secret key.
+This repository contains a starter system for locating your own enrolled Android phone from an installable laptop dashboard.
 
-## Current files
-- `index.html` — laptop dashboard; enter the Supabase function URL, public/anon key, and that phone's key.
-- `android/` — Android Studio starter app with account sign-in, device enrollment, and an explicitly enabled foreground location service with a persistent notification and Stop action.
-- `supabase/schema.sql` — database table.
-- `supabase/functions/v1-tracker/index.ts` — server-side key validation, enrollment, location update, lookup and revoke actions.
-- `supabase/config.toml` — lets the function validate requests itself; device keys and owner login are checked inside the function.
+## Laptop PWA
+- `laptop-dashboard/` contains the installable web app, manifest, service worker, and app icon.
+- The repository root page is only an information page; it does not show phone locations.
+- A PWA must be served from HTTPS or localhost to install. On GitHub Pages, open the dashboard at `https://rudar6511-dot.github.io/-V1-Tracker/laptop-dashboard/` and use the browser's Install app option (or the in-page install button when available).
+- A PWA is not physically locked to one laptop. Other devices may also install its shell if they can access the public URL. Protect location data through account authentication and server-side ownership checks; keep your login private.
+- The shell can load offline after caching, but sign-in and location lookups need internet.
 
-## Setup — required before it works
-1. Create a Supabase project and confirm email/account settings in Authentication.
+## Required setup before location lookup works
+1. Create/configure your Supabase project and Authentication account.
 2. Run `supabase/schema.sql` in Supabase SQL Editor.
-3. In Supabase Edge Function secrets, set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. **Never publish the service-role key.**
-4. Deploy the `supabase/functions/v1-tracker` function with `supabase/config.toml` settings. If using the CLI, deploy from this repository root and check the function's `verify_jwt = false` setting is applied; the handler validates owner tokens and per-device keys itself.
-5. In Android Studio, open the `android/` folder. Install on your own Android phone, enter the Supabase project URL and anon/public key, create/sign in to an account, and enroll the phone. Copy the unique key when shown.
-6. Tap **Start visible location sharing** on the phone and grant location permission. Android shows an ongoing notification while sharing; use Stop to end it.
-7. Open the GitHub Pages site on your laptop. Enter `https://YOUR-PROJECT.supabase.co/functions/v1/v1-tracker`, the Supabase anon/public key, and the phone's secret key. Click **Find My Phone** to see its latest uploaded position.
+3. Configure Edge Function secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Never put the service-role key in website code, Android code, or GitHub.
+4. Deploy `supabase/functions/v1-tracker/index.ts` as `v1-tracker` with `verify_jwt = false` applied from `supabase/config.toml`. The function checks owner tokens internally for enrollment, location lookup, and revocation. Redeploy after code changes.
+5. Install/run the Android project in `android/` on your own phone. Sign in with the same Supabase account, enroll the device, and keep the unique Secret Key private.
+6. Start visible location sharing on the phone and grant location permission. The phone must be powered on, online, and sharing to upload a fresh position.
+7. On the laptop PWA, enter the function URL and public/anon key, then sign in with the same account and enter the phone's Secret Key.
 
-## Important limitations and safety
-- GitHub Pages alone cannot obtain a phone's GPS; the backend and Android app must be configured first.
-- The phone needs location permission, power, network access, and the sharing service running to send fresh positions. Android may limit background work depending on battery settings. If offline, the dashboard can only show the last uploaded location.
-- The device key is a password. Anyone with it may request that device's latest location. Keep it private and revoke it if exposed.
-- The starter's `revoke` action accepts the device key; after revocation, enroll the device again to receive a replacement key.
-- Use only on devices you own or whose owner explicitly agrees to location sharing.
-- This code has not been built/tested on a physical device in this environment. Test before relying on it for theft recovery.
+## Security and limitations
+- GitHub Pages is public hosting; do not put secrets in the repository. The service-role key must remain server-side.
+- Location lookup requires both the enrolled account and its device key after the updated Edge Function is deployed. Before redeploying, do not rely on the updated dashboard for privacy.
+- This starter has not been built or tested on a physical Android device. Test before relying on it for theft recovery.
+- Only track your own device or a device whose owner explicitly agrees to location sharing.
