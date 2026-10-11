@@ -28,23 +28,13 @@ Deno.serve(async (req) => {
       ? { id: String(user.id), email: String(user.email) }
       : null;
   };
-  const ownerUser = async (request: Request) => {
-    const user = await signedInUser(request);
-    const allowedEmail = (Deno.env.get("V1_OWNER_EMAIL") || "").trim().toLowerCase();
-    if (!allowedEmail) return { user: null, error: "Server owner email is not configured." };
-    if (!user) return { user: null, error: "Please sign in first." };
-    if (user.email.trim().toLowerCase() !== allowedEmail) {
-      return { user: null, error: "This Gmail account is not allowed to access the V1 Tracker dashboard." };
-    }
-    return { user, error: null };
-  };
   try {
     const body = await req.json();
     if (body.action === "whoami" || body.action === "register") {
-      const access = await ownerUser(req);
-      if (!access.user) return reply({ error: access.error }, access.error === "Server owner email is not configured." ? 500 : 403);
-      if (body.action === "whoami") return reply({ ok: true, email: access.user.email });
-      const ownerId = access.user.id;
+      const user = await signedInUser(req);
+      if (!user) return reply({ error: "Please sign in with your own account first." }, 401);
+      if (body.action === "whoami") return reply({ ok: true, email: user.email });
+      const ownerId = user.id;
       const key = randomKey();
       const inserted = await rest("tracked_devices", {
         method: "POST", headers: { Prefer: "return=representation" },
@@ -68,9 +58,9 @@ Deno.serve(async (req) => {
       return reply({ ok: true });
     }
     if (body.action === "locate" || body.action === "revoke") {
-      const access = await ownerUser(req);
-      if (!access.user) return reply({ error: access.error }, access.error === "Server owner email is not configured." ? 500 : 403);
-      const ownerId = access.user.id;
+      const user = await signedInUser(req);
+      if (!user) return reply({ error: "Please sign in with your own account first." }, 401);
+      const ownerId = user.id;
       if (body.action === "locate") {
         const found = await rest("tracked_devices?select=device_name,latitude,longitude,accuracy_m,updated_at&key_hash=eq." + encodeURIComponent(keyHash) + "&owner_id=eq." + encodeURIComponent(ownerId) + "&revoked_at=is.null&limit=1");
         if (!found.ok) return reply({ error: "Could not query device." }, 500);
