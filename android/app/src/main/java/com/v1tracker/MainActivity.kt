@@ -110,10 +110,19 @@ class MainActivity : Activity() {
                     runOnUiThread { setStatus(if (signUp) "Account request sent. If email confirmation is enabled, confirm your email, then log in." else "No session token returned. Check login details and email confirmation.") }
                     return@execute
                 }
+                val previousAccount = prefs.getString("account_email", "") ?: ""
+                val existingKeyAccount = prefs.getString("tracking_key_email", "") ?: ""
+                // Never reuse a key on this installation after switching accounts.
+                if ((previousAccount.isNotBlank() && !previousAccount.equals(e, ignoreCase = true)) ||
+                    (existingKeyAccount.isNotBlank() && !existingKeyAccount.equals(e, ignoreCase = true)) ||
+                    (existingKeyAccount.isBlank() && (prefs.getString("tracking_key", "") ?: "").isNotBlank())) {
+                    startService(Intent(this@MainActivity, LocationShareService::class.java).setAction("STOP"))
+                    prefs.edit().remove("tracking_key").remove("tracking_key_email").apply()
+                }
                 accessToken = token
-                prefs.edit().putString("access_token", token).apply()
+                prefs.edit().putString("access_token", token).putString("account_email", e).apply()
                 runOnUiThread {
-                    setStatus("Signed in. Tap Show / create this phone's Secret Key.")
+                    setStatus("Signed in as $e. This account will get its own phone Secret Key.")
                     if ((prefs.getString("tracking_key", "") ?: "").isBlank()) enrollDevice()
                 }
             } catch (e: Exception) { runOnUiThread { setStatus("Sign-in failed: " + (e.message ?: "network error")) } }
@@ -143,14 +152,21 @@ class MainActivity : Activity() {
                 if (conn.responseCode !in 200..299) throw Exception(JSONObject(text).optString("error", "server rejected enrollment"))
                 val key = JSONObject(text).optString("tracking_key")
                 if (key.isBlank()) throw Exception("server did not return a key")
-                prefs.edit().putString("tracking_key", key).apply()
-                runOnUiThread { keyView.text = "SECRET KEY (copy it now and keep private):\n$key"; setStatus("Phone enrolled. Save the key somewhere safe; the server will not show it again.") }
+                val accountEmail = prefs.getString("account_email", "") ?: ""
+                prefs.edit().putString("tracking_key", key).putString("tracking_key_email", accountEmail).apply()
+                runOnUiThread { keyView.text = "SECRET KEY (copy it now and keep private):\n$key"; setStatus("Phone enrolled for $accountEmail. Save the key somewhere safe; the server will not show it again.") }
             } catch (e: Exception) { runOnUiThread { setStatus("Enrollment failed: " + (e.message ?: "network error")) } }
         }
     }
 
     private fun startSharing() {
-        if ((prefs.getString("tracking_key", "") ?: "").isBlank()) { setStatus("Log in and enroll this phone first."); return }
+        val key = prefs.getString("tracking_key", "") ?: ""
+        val keyAccount = prefs.getString("tracking_key_email", "") ?: ""
+        val signedInEmail = prefs.getString("account_email", "") ?: ""
+        if (key.isBlank() || keyAccount.isBlank() || !keyAccount.equals(signedInEmail, ignoreCase = true)) {
+            setStatus("Log in with the account that owns this phone key, then enroll this phone.")
+            return
+        }
         saveConfig()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
