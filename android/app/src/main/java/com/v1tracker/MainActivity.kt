@@ -69,7 +69,7 @@ class MainActivity : Activity() {
         button("Log in and enroll this phone") { authenticate(signUp = false) }
         button("Show / create this phone's Secret Key") { enrollDevice() }
         keyView = TextView(this).apply {
-            text = if ((prefs.getString("tracking_key", "") ?: "").isNotBlank()) "Secret key saved securely on this phone. Use the Show key button to reveal it." else "This phone is not enrolled yet."
+            text = if ((prefs.getString("tracking_key", "") ?: "").isNotBlank()) "Secret key is stored on this phone. Use Show key to reveal it; keep it private." else "This phone is not enrolled yet."
             setTextColor(0xFF83F0C5.toInt()); textSize = 14f
             root.addView(this)
         }
