@@ -13,8 +13,8 @@ This repository contains a starter system for locating your own enrolled Android
 1. Create/configure your Supabase project and Authentication account.
 2. Run `supabase/schema.sql` in Supabase SQL Editor.
 3. Configure Edge Function secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Never put the service-role key in website code, Android code, or GitHub.
-4. Deploy `supabase/functions/v1-tracker/index.ts` as `v1-tracker` with `verify_jwt = false` applied from `supabase/config.toml`. The function checks owner tokens internally for enrollment, location lookup, and revocation. Redeploy after code changes.
-5. Install/run the Android project in `android/` on your own phone. Sign in with the same Supabase account, enroll the device, and keep the unique Secret Key private.
+4. Deploy `supabase/functions/v1-tracker/index.ts` as `v1-tracker` with `verify_jwt = false` applied from `supabase/config.toml`. The function verifies each user's Supabase access token internally. Each user can enroll their own phone; location lookup and revocation are restricted to that signed-in user's account ID. No `V1_OWNER_EMAIL` allow-list is needed for this multi-user setup. Redeploy after code changes.
+5. Install/run the Android project in `android/` on the phone. Each user should create/sign in to their own Supabase account, enroll that phone, and keep the unique Secret Key private. On a laptop, sign in with the same account used on that phone.
 6. Start visible location sharing on the phone and grant location permission. The phone must be powered on, online, and sharing to upload a fresh position.
 7. On the laptop PWA, enter the function URL and public/anon key, then sign in with the same account and enter the phone's Secret Key.
 
