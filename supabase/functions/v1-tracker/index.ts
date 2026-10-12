@@ -33,7 +33,11 @@ Deno.serve(async (req) => {
     if (body.action === "whoami" || body.action === "register") {
       const user = await signedInUser(req);
       if (!user) return reply({ error: "Please sign in with your own account first." }, 401);
-      if (body.action === "whoami") return reply({ ok: true, email: user.email });
+      if (body.action === "whoami") {
+        const ownerEmail = (Deno.env.get("V1_OWNER_EMAIL") || "").trim().toLowerCase();
+        if (!ownerEmail) return reply({ error: "Dashboard owner is not configured. Set V1_OWNER_EMAIL in Edge Function secrets." }, 500);
+        return reply({ ok: true, email: user.email, is_owner: user.email.trim().toLowerCase() === ownerEmail });
+      }
       const ownerId = user.id;
       const key = randomKey();
       const inserted = await rest("tracked_devices", {
@@ -62,6 +66,9 @@ Deno.serve(async (req) => {
       if (!user) return reply({ error: "Please sign in with your own account first." }, 401);
       const ownerId = user.id;
       if (body.action === "locate") {
+        const ownerEmail = (Deno.env.get("V1_OWNER_EMAIL") || "").trim().toLowerCase();
+        if (!ownerEmail) return reply({ error: "Dashboard owner is not configured." }, 500);
+        if (user.email.trim().toLowerCase() !== ownerEmail) return reply({ error: "Finding Dashboard is available only to the configured owner account." }, 403);
         const found = await rest("tracked_devices?select=device_name,latitude,longitude,accuracy_m,updated_at&key_hash=eq." + encodeURIComponent(keyHash) + "&owner_id=eq." + encodeURIComponent(ownerId) + "&revoked_at=is.null&limit=1");
         if (!found.ok) return reply({ error: "Could not query device." }, 500);
         const rows = await found.json();
