@@ -18,14 +18,14 @@ Deno.serve(async (req) => {
   if (!url || !service || !anon) return reply({ error: "Server configuration is incomplete." }, 500);
   const headers = { apikey: service, Authorization: "Bearer " + service, "Content-Type": "application/json" };
   const rest = async (path: string, init: RequestInit = {}) => fetch(url + "/rest/v1/" + path, { ...init, headers: { ...headers, ...(init.headers || {}) } });
-  const signedInUser = async (request: Request): Promise<{ id: string; email: string } | null> => {
+  const signedInUser = async (request: Request): Promise<{ id: string; email: string; phone: string } | null> => {
     const auth = request.headers.get("Authorization") || "";
     if (!auth.startsWith("Bearer ")) return null;
     const response = await fetch(url + "/auth/v1/user", { headers: { apikey: anon, Authorization: auth } });
     if (!response.ok) return null;
     const user = await response.json();
-    return user?.id && user?.email
-      ? { id: String(user.id), email: String(user.email) }
+    return user?.id
+      ? { id: String(user.id), email: String(user.email || user.user_metadata?.email || ""), phone: String(user.phone || "") }
       : null;
   };
   try {
@@ -34,9 +34,9 @@ Deno.serve(async (req) => {
       const user = await signedInUser(req);
       if (!user) return reply({ error: "Please sign in with your own account first." }, 401);
       if (body.action === "whoami") {
-        const ownerEmail = (Deno.env.get("V1_OWNER_EMAIL") || "").trim().toLowerCase();
-        if (!ownerEmail) return reply({ error: "Dashboard owner is not configured. Set V1_OWNER_EMAIL in Edge Function secrets." }, 500);
-        return reply({ ok: true, email: user.email, is_owner: user.email.trim().toLowerCase() === ownerEmail });
+        const ownerPhone = (Deno.env.get("V1_OWNER_PHONE") || "").replace(/[^+0-9]/g, "");
+        if (!ownerPhone) return reply({ error: "Dashboard owner is not configured. Set V1_OWNER_PHONE in Edge Function secrets using international format, e.g. +91XXXXXXXXXX." }, 500);
+        return reply({ ok: true, email: user.email, phone: user.phone, is_owner: user.phone.replace(/[^+0-9]/g, "") === ownerPhone });
       }
       const ownerId = user.id;
       const key = randomKey();
@@ -66,9 +66,9 @@ Deno.serve(async (req) => {
       if (!user) return reply({ error: "Please sign in with your own account first." }, 401);
       const ownerId = user.id;
       if (body.action === "locate") {
-        const ownerEmail = (Deno.env.get("V1_OWNER_EMAIL") || "").trim().toLowerCase();
-        if (!ownerEmail) return reply({ error: "Dashboard owner is not configured." }, 500);
-        if (user.email.trim().toLowerCase() !== ownerEmail) return reply({ error: "Finding Dashboard is available only to the configured owner account." }, 403);
+        const ownerPhone = (Deno.env.get("V1_OWNER_PHONE") || "").replace(/[^+0-9]/g, "");
+        if (!ownerPhone) return reply({ error: "Dashboard owner is not configured. Set V1_OWNER_PHONE." }, 500);
+        if (user.phone.replace(/[^+0-9]/g, "") !== ownerPhone) return reply({ error: "Finding Dashboard is available only to the configured owner phone." }, 403);
         const found = await rest("tracked_devices?select=device_name,latitude,longitude,accuracy_m,updated_at&key_hash=eq." + encodeURIComponent(keyHash) + "&owner_id=eq." + encodeURIComponent(ownerId) + "&revoked_at=is.null&limit=1");
         if (!found.ok) return reply({ error: "Could not query device." }, 500);
         const rows = await found.json();
