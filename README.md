@@ -32,7 +32,7 @@ This repository contains a starter system for locating your own enrolled Android
    - `V1_ALERT_EMAIL`: administrator alert inbox.
    - `V1_ALERT_FROM`: verified sender address, e.g. `V1 Tracker <alerts@your-verified-domain.example>`.
 3. Redeploy the `v1-tracker` Edge Function after updating `index.ts`.
-4. Sign in to the dashboard, save a recovery email, and explicitly accept the disclosure. Use **Report my phone lost** to send the alert to the configured administrator inbox and the entered recovery email. The email contains account email, device name, and timestamp only—never the Secret Key or coordinates.
+4. Sign in to the dashboard, save a recovery email, and explicitly accept the disclosure. Use **Report my phone lost** to send the alert to the configured administrator inbox and the entered recovery email. The email contains account email, device name, timestamp, and (if available) a link to the last reported location, its coordinates, accuracy, and update time. This is the last uploaded location, not guaranteed live. The Secret Key is never emailed. The alert reminds the user to rotate/recreate the key after recovering the phone; rotating invalidates the old key and may require re-enrolling the phone.
 5. The recovery email is currently saved as entered; this version does not independently verify control of that recovery mailbox. Use an email address you control and add a verification flow before public production use.
 
 ## Important Android limitation
