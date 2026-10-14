@@ -23,3 +23,17 @@ This repository contains a starter system for locating your own enrolled Android
 - Location lookup requires both the enrolled account and its device key after the updated Edge Function is deployed. Before redeploying, do not rely on the updated dashboard for privacy.
 - This starter has not been built or tested on a physical Android device. Test before relying on it for theft recovery.
 - Only track your own device or a device whose owner explicitly agrees to location sharing.
+
+
+## Recovery email and lost-phone alert
+1. Run the latest `supabase/schema.sql` in Supabase SQL Editor. This adds the private `recovery_profiles` table.
+2. Configure a Resend account and verify the sender domain/address. Add these Edge Function secrets in Supabase:
+   - `RESEND_API_KEY`: Resend API key (server-side secret only).
+   - `V1_ALERT_EMAIL`: administrator alert inbox.
+   - `V1_ALERT_FROM`: verified sender address, e.g. `V1 Tracker <alerts@your-verified-domain.example>`.
+3. Redeploy the `v1-tracker` Edge Function after updating `index.ts`.
+4. Sign in to the dashboard, save a recovery email, and explicitly accept the disclosure. Use **Report my phone lost** to send the alert to the configured administrator inbox and the entered recovery email. The email contains account email, device name, and timestamp only—never the Secret Key or coordinates.
+5. The recovery email is currently saved as entered; this version does not independently verify control of that recovery mailbox. Use an email address you control and add a verification flow before public production use.
+
+## Important Android limitation
+This web dashboard and ordinary Android app do **not** detect how many times someone enters a wrong lock-screen PIN/password. Android does not expose those failed unlock attempts to ordinary apps. The alert is therefore user-triggered with **Report my phone lost**; it is not automatically triggered after 6–7 failed attempts. Do not rely on this starter as a theft alarm until the Android management approach and physical-device tests are completed. Location is only available if the phone is online and its own visible location-sharing service is running.
