@@ -14,3 +14,15 @@ create table if not exists public.tracked_devices (
 alter table public.tracked_devices enable row level security;
 revoke all on public.tracked_devices from anon, authenticated;
 -- All reads/writes must go through the server-side Edge Function.
+
+
+-- Recovery settings and explicit consent for lost-device alerts.
+create table if not exists public.recovery_profiles (
+ user_id uuid primary key references auth.users(id) on delete cascade,
+ recovery_email text not null,
+ location_consent boolean not null default false,
+ updated_at timestamptz not null default now()
+);
+alter table public.recovery_profiles enable row level security;
+revoke all on public.recovery_profiles from anon, authenticated;
+-- Read/write only through the authenticated Edge Function.
