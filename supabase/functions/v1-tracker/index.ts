@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       const profiles = await profileResponse.json();
       const profile = profiles[0];
       if (!profile || profile.location_consent !== true) return reply({ error: "Save your recovery email and explicitly confirm consent first." }, 400);
-      const deviceResponse = await rest("tracked_devices?select=device_name&owner_id=eq." + encodeURIComponent(user.id) + "&revoked_at=is.null&limit=1");
+      const deviceResponse = await rest("tracked_devices?select=id,device_name,latitude,longitude,accuracy_m,updated_at&owner_id=eq." + encodeURIComponent(user.id) + "&revoked_at=is.null&order=updated_at.desc.nullslast&limit=1");
       if (!deviceResponse.ok) return reply({ error: "Could not find an enrolled device." }, 500);
       const devices = await deviceResponse.json();
       if (!devices.length) return reply({ error: "Enroll your own device first." }, 404);
@@ -79,14 +79,24 @@ Deno.serve(async (req) => {
       const fromEmail = Deno.env.get("V1_ALERT_FROM");
       if (!apiKey || !adminEmail || !fromEmail) return reply({ error: "Email alerts are not configured yet. Set RESEND_API_KEY, V1_ALERT_EMAIL, and V1_ALERT_FROM in Edge Function secrets." }, 503);
       const now = new Date().toISOString();
-      const deviceName = String(body.device_name || devices[0].device_name || "My phone").slice(0, 80);
+      const lastDevice = devices[0];
+      const deviceName = String(body.device_name || lastDevice.device_name || "My phone").slice(0, 80);
+      const hasLocation = lastDevice.latitude !== null && lastDevice.longitude !== null &&
+        Number.isFinite(Number(lastDevice.latitude)) && Number.isFinite(Number(lastDevice.longitude));
+      const mapUrl = hasLocation ? "https://www.openstreetmap.org/?mlat=" + encodeURIComponent(String(lastDevice.latitude)) + "&mlon=" + encodeURIComponent(String(lastDevice.longitude)) + "#map=16/" + encodeURIComponent(String(lastDevice.latitude)) + "/" + encodeURIComponent(String(lastDevice.longitude)) : "";
+      const locationText = hasLocation
+        ? "\nLast reported location (may not be current): " + mapUrl +
+          "\nCoordinates: " + lastDevice.latitude + ", " + lastDevice.longitude +
+          "\nGPS accuracy: " + (lastDevice.accuracy_m == null ? "not reported" : lastDevice.accuracy_m + " m") +
+          "\nLast location update (UTC): " + (lastDevice.updated_at || "unknown")
+        : "\nNo location has been uploaded for this device yet.";
       const emailBody = {
         from: fromEmail,
         to: [adminEmail, profile.recovery_email],
         subject: "V1 Tracker: lost phone alert",
         text: "A user has manually reported an enrolled device as lost.\nAccount email: " + user.email +
-          "\nDevice: " + deviceName + "\nReported at (UTC): " + now +
-          "\nNo Secret Key or location coordinates are included in this email. Sign in to the authorized dashboard to review available information.\nIf this was a mistake, sign in and review your recovery settings."
+          "\nDevice: " + deviceName + "\nReported at (UTC): " + now + locationText +
+          "\nSecurity: the Secret Key is never sent by email. After recovering the phone, sign in and rotate/recreate its Secret Key; this invalidates the old key. Location is only the last uploaded position and may be stale.\nIf this was a mistake, sign in and review your recovery settings."
       };
       const sent = await fetch("https://api.resend.com/emails", {
         method: "POST",
